@@ -1,0 +1,83 @@
+{
+  "nodes": {
+    "crane": {
+      "locked": {
+        "lastModified": 1779130139,
+        "narHash": "sha256-BLrtr42azquO7MdGFU5a7KiMl3YpFlTeIXqy1fT5GlQ=",
+        "owner": "ipetkov",
+        "repo": "crane",
+        "rev": "edb38893982a3338972bb4a2ec7ce7c29ba10fd9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ipetkov",
+        "repo": "crane",
+        "rev": "edb38893982a3338972bb4a2ec7ce7c29ba10fd9",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1783495186,
+        "narHash": "sha256-XmPJSTrPxXj6m+Nq7kLd5br3YxrS95ZTX5/qJTKxfc8=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "ba34d35b6cc2a83159502235dfb130b64f0a502c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "master",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "crane": "crane",
+        "nixpkgs": "nixpkgs",
+        "rust-overlay": "rust-overlay",
+        "snix": "snix"
+      }
+    },
+    "rust-overlay": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1783320166,
+        "narHash": "sha256-l7C/OsjcnWDOk2K3ssj+SBduwL67LashjBqis9+t468=",
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "rev": "20ee15370c9256669d66968b89ee20a4b0a4e673",
+        "type": "github"
+      },
+      "original": {
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "type": "github"
+      }
+    },
+    "snix": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1783273100,
+        "narHash": "sha256-w11vlaaaf993IIeLuSJiR/CMStsEDFiOFDm7loJM9DM=",
+        "ref": "canon",
+        "rev": "6a45d5bb27674882b89fc72624ec6e5e26793693",
+        "revCount": 22572,
+        "type": "git",
+        "url": "https://git.snix.dev/snix/snix.git"
+      },
+      "original": {
+        "ref": "canon",
+        "type": "git",
+        "url": "https://git.snix.dev/snix/snix.git"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
