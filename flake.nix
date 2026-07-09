@@ -110,9 +110,15 @@
               type = "objectstore"
               object_store_url = "file://$castore/blobs"
               object_store_options = {}
-              [directoryservices.root]
+              [directoryservices.mem]
+              type = "memory"
+              [directoryservices.dredb]
               type = "redb"
               path = "$castore/dir.redb"
+              [directoryservices.root]
+              type = "cache"
+              near = "&mem"
+              far = "&dredb"
               [pathinfoservices.localcache]
               type = "redb"
               path = "$castore/pi.redb"
