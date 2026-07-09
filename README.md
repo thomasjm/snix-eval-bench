@@ -7,6 +7,36 @@ A benchmark comparing eval of **[CppNix](https://github.com/NixOS/nix)** and
 nix run
 ```
 
+There is also a **realise** benchmark, which measures what nox's full-snix mode actually pays —
+evaluate *and realise* a closure through a castore store composition, substituting from
+cache.nixos.org — and dumps a phase-timing breakdown:
+
+```bash
+nix run .#realise                 # small 6-package env (env-realise.nix)
+nix run .#realise -- ./env.nix    # the large 40-package env
+```
+
+### Why the realise benchmark exists
+
+The eval benchmark forces `.drvPath` (instantiate only) against in-memory stores, so snix is only
+~3.85× CppNix. But full-snix in nox forces `.outPath` (via `readDir`), which *realises* the closure
+against a real castore store — and that's where the time actually goes. The realise benchmark uses
+**local** castore backends (objectstore blobs + redb dir/pathinfo, far side = cache.nixos.org) to
+isolate snix's own realise cost from nox's extra gRPC-to-nox-store layer.
+
+What it shows for a 6-package env (hello, coreutils, jq, ripgrep, tree, which):
+
+```
+COLD (fresh store):  wall 9.4s   pathinfo_get 1512 lookups   substitute 42 paths (14s, cache.nixos.org)
+WARM (store reused): wall 3.4s   pathinfo_get 1512 lookups (0.2s local)   substitute 1
+```
+
+Realising a *six-package* env does **~1500 `pathinfo_get` "is this path present?" lookups + ~2600
+castore reads**, and it scales with closure size. Locally (redb) those are cheap. But in nox each one
+is a **gRPC round-trip to nox-store → Postgres/SeaweedFS**, so full-snix is dominated by store
+round-trip latency, not by eval. The lever is batching/caching the pathinfo + directory queries and a
+lower-latency castore backend — not "make eval faster".
+
 ## The workload
 
 [`env.nix`](./env.nix) is a `symlinkJoin` over a few dozen common packages from a pinned
