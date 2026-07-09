@@ -24,18 +24,33 @@ against a real castore store — and that's where the time actually goes. The re
 **local** castore backends (objectstore blobs + redb dir/pathinfo, far side = cache.nixos.org) to
 isolate snix's own realise cost from nox's extra gRPC-to-nox-store layer.
 
-What it shows for a 6-package env (hello, coreutils, jq, ripgrep, tree, which):
+### The diagnosis
+
+The first run showed realising a *six-package* env did **~1500 `pathinfo_get` "is this path present?"
+lookups + ~2600 directory reads** — and it scales with closure size. Locally (redb) those are cheap,
+but in nox each one is a **gRPC round-trip to nox-store → Postgres/SeaweedFS**, so full-snix was
+dominated by store round-trip latency, not by eval:
 
 ```
-COLD (fresh store):  wall 9.4s   pathinfo_get 1512 lookups   substitute 42 paths (14s, cache.nixos.org)
-WARM (store reused): wall 3.4s   pathinfo_get 1512 lookups (0.2s local)   substitute 1
+BEFORE:  pathinfo_get 1462 lookups   descend 0.9s   dir_get 0.03s   substitute (network)
 ```
 
-Realising a *six-package* env does **~1500 `pathinfo_get` "is this path present?" lookups + ~2600
-castore reads**, and it scales with closure size. Locally (redb) those are cheap. But in nox each one
-is a **gRPC round-trip to nox-store → Postgres/SeaweedFS**, so full-snix is dominated by store
-round-trip latency, not by eval. The lever is batching/caching the pathinfo + directory queries and a
-lower-latency castore backend — not "make eval faster".
+### The fixes (landed in snix + nox)
+
+Two changes collapse that overhead — the current default pin/composition here includes both:
+
+1. **PathInfo memo** (snix `build-glue`): eval resolves the same store path (the nixpkgs source) over
+   and over; memoizing the resolved `PathInfo` by digest turns those redundant lookups into cache hits.
+2. **In-process `memory` directory near-cache** (composition): serves repeated directory reads from
+   decoded in-RAM values instead of redb disk reads.
+
+```
+AFTER:   pathinfo_get 9 lookups      descend 0.1s   dir_get 0.002s   substitute (network) ← now the only real cost
+```
+
+`pathinfo_get` **1462 → 9** and `descend` **0.9s → 0.1s**. What's left is the actual work
+(`substitute`: fetching NARs from cache.nixos.org + ingesting into castore), which is network- and
+ingest-bound — the next lever is concurrency/prefetch of the substitution, not more read-caching.
 
 ## The workload
 
