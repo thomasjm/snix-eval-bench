@@ -79,17 +79,17 @@ byte-identical drv paths on both workloads.
 **Env bench** (`nix run`):
 
 ```
-cppnix        802.9 ms ±  8.1 ms
-snix-canon     2.756 s ± 0.012 s   (3.43× cppnix)
-snix-opt       2.182 s ± 0.038 s   (2.72× cppnix, −20.8% vs canon)
+cppnix        827.3 ms ± 26.4 ms
+snix-canon     2.796 s ± 0.036 s   (3.38× cppnix)
+snix-opt       2.231 s ± 0.036 s   (2.70× cppnix, −20.2% vs canon)
 ```
 
 **NixOS system eval** (`nix run .#nixos`):
 
 ```
-cppnix         2.798 s ± 0.068 s
-snix-canon    20.193 s ± 0.075 s   (7.22× cppnix)
-snix-opt      17.782 s ± 0.396 s   (6.35× cppnix, −11.9% vs canon)
+cppnix         2.805 s ± 0.032 s
+snix-canon    20.237 s ± 0.058 s   (7.21× cppnix)
+snix-opt      15.235 s ± 0.206 s   (5.43× cppnix, −24.7% vs canon)
 ```
 
 snix's gap vs CppNix is roughly twice as large on the module-system workload —
@@ -120,6 +120,8 @@ commits, in order (links resolve once the branch is pushed):
   scalar `NixEquality` requests answered inline in `run_generator` — builtin-driven equality (option merging, `lib.elem`) skips the nix_eq generator (−1.8% on the NixOS bench).
 - [`d43da5b4`](https://github.com/codedownio/snix/commit/d43da5b43be1b9c9169fb33395b36dee76b0254e)
   non-scalar `NixEquality` children run inline: the nix_eq generator executes nested and the requester is answered directly, skipping two outer-loop round-trips per comparison (26.4M/eval on the NixOS bench; −1.5% there).
+- [`926c82c7`](https://github.com/codedownio/snix/commit/926c82c79f8cc6d68159de89b1c8693600f41ac0)
+  synchronous `nix_eq` with a generator escape hatch: comparisons over already-forced operands (the common case) run with no coroutine at all — boxes, airlocks and resume machinery gone, not just round trips (**−13.8% NixOS**, −1.2% env).
 
 ## Methodology notes
 

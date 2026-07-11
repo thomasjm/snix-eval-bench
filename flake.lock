@@ -81,11 +81,11 @@
     "snix-optimized": {
       "flake": false,
       "locked": {
-        "lastModified": 1783732541,
-        "narHash": "sha256-2BvMuaO8fXrey/wxo19moB8TW9BIA3MbTsJd1ZoDkiM=",
+        "lastModified": 1783737708,
+        "narHash": "sha256-lD2xxfJAL/7O49tDpDFW3nXrcCP/qUfUroJcxhBAxqM=",
         "ref": "vm-force-fastpath",
-        "rev": "a62ff608cc2407b161072ea19e0937edb5b35dee",
-        "revCount": 22627,
+        "rev": "926c82c79f8cc6d68159de89b1c8693600f41ac0",
+        "revCount": 22629,
         "type": "git",
         "url": "file:///home/tom/tools/snix"
       },
