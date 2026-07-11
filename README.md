@@ -7,7 +7,7 @@ snix. All evaluators must produce byte-identical drv paths before timing.
 ```bash
 nix run             # env bench: force .drvPath of env.nix (~40 packages)
 nix run .#nixos     # NixOS system eval through the module system
-nix run .#realise   # eval AND realise a closure via castore (nox's full-snix path)
+nix run .#realise   # eval AND realise a closure via a castore store
 ```
 
 `RUNS=n` / `WARMUP=n` override the hyperfine defaults.
@@ -65,10 +65,10 @@ Commits in order (links resolve once the branch is pushed):
 
 ## The realise benchmark
 
-Eval benches only instantiate; nox's full-snix mode also *realises* against a
-castore store, which is where its time goes. `.#realise` uses local castore
-backends (far side = cache.nixos.org) to isolate snix's realise cost, and
-prints a phase breakdown. Past finding: ~1500 redundant `pathinfo_get`s + ~2600
+The eval benches only instantiate; a deployment that also *realises* the
+closure against a castore store pays much more, and that's where the time
+goes. `.#realise` uses local castore backends (far side = cache.nixos.org) to
+isolate snix's realise cost, and prints a phase breakdown. Past finding: ~1500 redundant `pathinfo_get`s + ~2600
 dir reads per small env, fixed by a PathInfo memo (snix `build-glue`) and an
 in-process `memory` directory near-cache (composition) — `pathinfo_get`
 1462 → 9, `descend` 0.9 s → 0.1 s. What remains is network fetch + ingest.

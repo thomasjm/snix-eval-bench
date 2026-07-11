@@ -64,7 +64,7 @@
               pname = name;
               cargoArtifacts = craneLib.buildDepsOnly (snixCommonArgs // { pname = "${name}-deps"; });
               # xp-store-composition-cli: enables --experimental-store-composition, which the realise
-              # benchmark needs to point snix at a castore store (nox builds snix-eval with it too).
+              # benchmark needs to point snix at a castore store.
               cargoExtraArgs = "--package snix-cli-eval --features xp-store-composition-cli";
             });
 
@@ -130,12 +130,12 @@
             expr = ''(import ${nixpkgs.outPath}/nixos { configuration = { fileSystems."/" = { device = "/dev/sda"; fsType = "ext4"; }; boot.loader.grub.device = "/dev/sda"; system.stateVersion = "26.11"; }; }).system.drvPath'';
             defaultRuns = 3;
           };
-          # Realise benchmark: measures what the nox full-snix mode actually pays — not just eval, but
-          # evaluate-AND-realise the closure through a castore store composition, substituting from
-          # cache.nixos.org. Uses LOCAL castore backends (objectstore blobs + redb dir/pathinfo), so it
-          # isolates snix's own realise cost (substitution + ingest + store round-trips) from nox's
-          # extra gRPC-to-nox-store layer. Forces the output path via `readDir`, and dumps the
-          # `fullsnix-phase-stats` breakdown for a cold run (fresh store) and a warm run (store reused).
+          # Realise benchmark: not just eval, but evaluate-AND-realise the closure through a
+          # castore store composition, substituting from cache.nixos.org. Uses LOCAL castore
+          # backends (objectstore blobs + redb dir/pathinfo), isolating snix's own realise cost
+          # (substitution + ingest + store round-trips) from any remote-store layer. Forces the
+          # output path via `readDir`, and dumps the `fullsnix-phase-stats` breakdown for a cold
+          # run (fresh store) and a warm run (store reused).
           realise = pkgs.writeShellApplication {
             name = "snix-realise-bench";
             runtimeInputs = [ snix-eval pkgs.coreutils pkgs.gnugrep ];
@@ -192,9 +192,10 @@
               out=$(run)
               echo "$out" | grep 'fullsnix-phase-stats' || true
               echo
-              echo "phase legend: pathinfo_get = store 'is this path present?' lookups (a gRPC round-trip"
-              echo "each against nox-store; local redb here), substitute/fetch = cache.nixos.org NAR"
-              echo "fetch+ingest, nar_calc = NAR hashing, blob_read/dir_get/descend = castore reads."
+              echo "phase legend: pathinfo_get = store 'is this path present?' lookups (a network"
+              echo "round-trip against a remote store; local redb here), substitute/fetch ="
+              echo "cache.nixos.org NAR fetch+ingest, nar_calc = NAR hashing,"
+              echo "blob_read/dir_get/descend = castore reads."
             '';
           };
         in

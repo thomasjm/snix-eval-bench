@@ -5,7 +5,7 @@
 # is built.
 #
 # Self-contained (fetches its own pinned nixpkgs via fetchTarball) so the sources flow through castore
-# during eval — the same shape the nox full-snix suite uses.
+# during eval — the same shape a full evaluate-and-realise pipeline uses.
 { system ? builtins.currentSystem }:
 
 let
