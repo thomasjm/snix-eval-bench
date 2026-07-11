@@ -118,6 +118,8 @@ commits, in order (links resolve once the branch is pushed):
   amortized-O(1) span lookups via a per-frame cursor instead of a binary search per query (noise; algorithmic cleanup).
 - [`a62ff608`](https://github.com/codedownio/snix/commit/a62ff608cc2407b161072ea19e0937edb5b35dee)
   scalar `NixEquality` requests answered inline in `run_generator` — builtin-driven equality (option merging, `lib.elem`) skips the nix_eq generator (−1.8% on the NixOS bench).
+- [`d43da5b4`](https://github.com/codedownio/snix/commit/d43da5b43be1b9c9169fb33395b36dee76b0254e)
+  non-scalar `NixEquality` children run inline: the nix_eq generator executes nested and the requester is answered directly, skipping two outer-loop round-trips per comparison (26.4M/eval on the NixOS bench; −1.5% there).
 
 ## Methodology notes
 
