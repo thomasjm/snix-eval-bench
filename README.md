@@ -7,7 +7,17 @@ A benchmark comparing eval of **[CppNix](https://github.com/NixOS/nix)** and
 nix run
 ```
 
-There is also a **realise** benchmark, which measures what nox's full-snix mode actually pays —
+There is also a **NixOS** benchmark, which evaluates a minimal-but-real NixOS system through
+the module system to `.system.drvPath` — a very different profile from the env bench (heavy
+attrset traffic, option-merge equality checks, functional combinators; snix's gap vs CppNix is
+roughly twice as large here). Both evaluators are checked to produce the byte-identical system
+drv before timing:
+
+```bash
+nix run .#nixos                   # RUNS=n / WARMUP=n env vars override the defaults
+```
+
+And a **realise** benchmark, which measures what nox's full-snix mode actually pays —
 evaluate *and realise* a closure through a castore store composition, substituting from
 cache.nixos.org — and dumps a phase-timing breakdown:
 

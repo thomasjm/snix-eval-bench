@@ -61,11 +61,14 @@
 
           env = import ./env.nix { nixpkgs = nixpkgs.outPath; inherit system; };
 
-          bench = pkgs.writeShellApplication {
-            name = "snix-eval-bench";
+          # Common CppNix-vs-snix comparison harness: sanity-check that both
+          # evaluators produce the same drv path for `expr`, then hyperfine
+          # them. `defaultRuns` can be overridden at runtime via RUNS.
+          mkCompareBench = { name, expr, defaultRuns ? 5 }: pkgs.writeShellApplication {
+            inherit name;
             runtimeInputs = [ pkgs.hyperfine pkgs.nix snix-eval ];
             text = ''
-              expr="(import ${./env.nix} { nixpkgs = ${nixpkgs.outPath}; }).drvPath"
+              expr=${pkgs.lib.escapeShellArg expr}
 
               echo "CppNix:   $(nix eval --version)"
               echo "snix:     rev ${snix.rev or "unknown"}"
@@ -74,9 +77,9 @@
               echo "Expression: $expr"
               echo
 
-              # Sanity check: both evaluators must instantiate the same top-level .drv.
+              # Sanity check: both evaluators must instantiate the same drv.
               cpp_drv=$(nix eval --raw --impure --expr "$expr" 2>/dev/null)
-              snix_drv=$(RUST_LOG=error snix-eval --no-warnings -E "$expr" 2>/dev/null | tr -d '"' | awk '{print $2}')
+              snix_drv=$(RUST_LOG=error snix-eval --no-warnings -E "$expr" 2>/dev/null | grep -E '^=> ' | tr -d '"' | awk '{print $2}')
               echo "CppNix drvPath: $cpp_drv"
               echo "snix drvPath: $snix_drv"
               if [ "$cpp_drv" != "$snix_drv" ]; then
@@ -85,11 +88,26 @@
               fi
               echo
 
-              hyperfine --warmup "''${WARMUP:-1}" --runs "''${RUNS:-5}" \
+              hyperfine --warmup "''${WARMUP:-1}" --runs "''${RUNS:-${toString defaultRuns}}" \
                 --command-name cppnix "nix eval --raw --impure --expr '$expr'" \
                 --command-name snix "RUST_LOG=error snix-eval --no-warnings -E '$expr'" \
                 "$@"
             '';
+          };
+
+          bench = mkCompareBench {
+            name = "snix-eval-bench";
+            expr = "(import ${./env.nix} { nixpkgs = ${nixpkgs.outPath}; }).drvPath";
+          };
+
+          # NixOS benchmark: evaluate a minimal-but-real NixOS system through the
+          # module system to `.system.drvPath`. This exercises a very different
+          # profile than the env bench: heavy attrset traffic, option merging
+          # (equality checks), and functional combinators. Run: nix run .#nixos
+          nixos-bench = mkCompareBench {
+            name = "snix-nixos-bench";
+            expr = ''(import ${nixpkgs.outPath}/nixos { configuration = { fileSystems."/" = { device = "/dev/sda"; fsType = "ext4"; }; boot.loader.grub.device = "/dev/sda"; system.stateVersion = "26.11"; }; }).system.drvPath'';
+            defaultRuns = 3;
           };
           # Realise benchmark: measures what the nox full-snix mode actually pays — not just eval, but
           # evaluate-AND-realise the closure through a castore store composition, substituting from
@@ -161,6 +179,7 @@
         in
         {
           inherit snix-eval env bench realise;
+          nixos = nixos-bench;
           default = bench;
         });
     };
