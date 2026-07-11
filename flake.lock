@@ -83,16 +83,16 @@
       "locked": {
         "lastModified": 1783737708,
         "narHash": "sha256-lD2xxfJAL/7O49tDpDFW3nXrcCP/qUfUroJcxhBAxqM=",
-        "ref": "vm-force-fastpath",
+        "owner": "codedownio",
+        "repo": "snix",
         "rev": "926c82c79f8cc6d68159de89b1c8693600f41ac0",
-        "revCount": 22629,
-        "type": "git",
-        "url": "file:///home/tom/tools/snix"
+        "type": "github"
       },
       "original": {
+        "owner": "codedownio",
         "ref": "vm-force-fastpath",
-        "type": "git",
-        "url": "file:///home/tom/tools/snix"
+        "repo": "snix",
+        "type": "github"
       }
     }
   },

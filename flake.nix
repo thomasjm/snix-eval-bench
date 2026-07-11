@@ -13,11 +13,11 @@
       url = "github:codedownio/snix/main";
       flake = false;
     };
-    # The local evaluator-optimization branch (force fast paths, direct thunk
-    # entry, sync builtins, fixed-width operands, ...). The compare benches run
-    # CppNix vs canon snix vs this.
+    # The evaluator-optimization branch (force fast paths, direct thunk entry,
+    # sync builtins, fixed-width operands, sync nix_eq, ...). The compare
+    # benches run CppNix vs canon snix vs this.
     snix-optimized = {
-      url = "git+file:///home/tom/tools/snix?ref=vm-force-fastpath";
+      url = "github:codedownio/snix/vm-force-fastpath";
       flake = false;
     };
   };

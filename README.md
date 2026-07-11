@@ -37,7 +37,7 @@ option-merge equality, functional combinators.
 
 ## The snix-opt branch
 
-Commits in order (links resolve once the branch is pushed):
+Commits in order:
 
 - [`fde08b8e`](https://github.com/codedownio/snix/commit/fde08b8eb9b1542ca2a674dbaae30e86ae82a190)
   aterm escaping: scalar scan instead of aho-corasick's 64 KiB-buffer stream API.
