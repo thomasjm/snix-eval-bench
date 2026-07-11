@@ -81,11 +81,11 @@
     "snix-optimized": {
       "flake": false,
       "locked": {
-        "lastModified": 1783737708,
-        "narHash": "sha256-lD2xxfJAL/7O49tDpDFW3nXrcCP/qUfUroJcxhBAxqM=",
+        "lastModified": 1783748472,
+        "narHash": "sha256-XG+my670OLgqFq++/GsoErHfpYAkRnbDoNk35i41Vyw=",
         "owner": "codedownio",
         "repo": "snix",
-        "rev": "926c82c79f8cc6d68159de89b1c8693600f41ac0",
+        "rev": "9f4d5efdca3f7e30fa9f724f37884adf57cfa1eb",
         "type": "github"
       },
       "original": {

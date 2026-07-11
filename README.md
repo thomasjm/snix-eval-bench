@@ -19,17 +19,17 @@ i9-11900H (idle), 2026-07-10:
 **Env bench:**
 
 ```
-cppnix        827.3 ms ± 26.4 ms
-snix-canon     2.796 s ± 0.036 s   (3.38× cppnix)
-snix-opt       2.231 s ± 0.036 s   (2.70× cppnix, −20.2% vs canon)
+cppnix        811.5 ms ±  7.9 ms
+snix-canon     2.789 s ± 0.062 s   (3.44× cppnix)
+snix-opt       2.190 s ± 0.047 s   (2.70× cppnix, −21.5% vs canon)
 ```
 
 **NixOS system eval:**
 
 ```
-cppnix         2.805 s ± 0.032 s
-snix-canon    20.237 s ± 0.058 s   (7.21× cppnix)
-snix-opt      15.235 s ± 0.206 s   (5.43× cppnix, −24.7% vs canon)
+cppnix         2.823 s ± 0.096 s
+snix-canon    20.383 s ± 0.095 s   (7.22× cppnix)
+snix-opt      14.491 s ± 0.382 s   (5.13× cppnix, −28.9% vs canon)
 ```
 
 The gap is ~2× larger on the module-system workload: heavy attrset traffic,
@@ -62,6 +62,9 @@ Commits in order:
 - [`926c82c7`](https://github.com/codedownio/snix/commit/926c82c79f8cc6d68159de89b1c8693600f41ac0)
   sync `nix_eq` with generator escape hatch: forced-operand comparisons need no
   coroutine at all (**−13.8% NixOS**, −1.2% env).
+- [`9f4d5efd`](https://github.com/codedownio/snix/commit/9f4d5efdca3f7e30fa9f724f37884adf57cfa1eb)
+  `check_equality` tries the sync comparison before yielding, skipping the
+  request round-trip through the coroutine airlock (**−6.3% NixOS**).
 
 ## The realise benchmark
 
