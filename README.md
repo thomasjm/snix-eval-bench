@@ -73,21 +73,30 @@ instantiates and hashes the full derivation graph (several thousand derivations)
 
 ## Results
 
-On my AMD Ryzen 9 9950X:
+Three-way, on an i9-11900H (idle), 2026-07-10. All three evaluators produce
+byte-identical drv paths on both workloads.
+
+**Env bench** (`nix run`):
 
 ```
-Benchmark 1: cppnix
-  Time (mean ± σ):      1.156 s ±  0.057 s    [User: 0.800 s, System: 0.164 s]
-  Range (min … max):    1.093 s …  1.294 s    10 runs
-
-Benchmark 2: snix
-  Time (mean ± σ):      4.445 s ±  0.120 s    [User: 4.112 s, System: 0.306 s]
-  Range (min … max):    4.226 s …  4.636 s    10 runs
-
-Summary
-  cppnix ran
-    3.85 ± 0.22 times faster than snix
+cppnix        802.9 ms ±  8.1 ms
+snix-canon     2.756 s ± 0.012 s   (3.43× cppnix)
+snix-opt       2.182 s ± 0.038 s   (2.72× cppnix, −20.8% vs canon)
 ```
+
+**NixOS system eval** (`nix run .#nixos`):
+
+```
+cppnix         2.798 s ± 0.068 s
+snix-canon    20.193 s ± 0.075 s   (7.22× cppnix)
+snix-opt      17.782 s ± 0.396 s   (6.35× cppnix, −11.9% vs canon)
+```
+
+snix's gap vs CppNix is roughly twice as large on the module-system workload —
+that's where the remaining generator/allocator/equality machinery costs live.
+`snix-opt` is the `vm-force-fastpath` branch (force fast paths, direct thunk
+bytecode entry, inline builtin generators, sync builtins, fixed-width
+operands, scalar equality/comparison fast paths).
 
 ## Methodology notes
 
