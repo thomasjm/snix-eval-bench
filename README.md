@@ -19,17 +19,17 @@ i9-11900H (idle), 2026-07-10:
 **Env bench:**
 
 ```
-cppnix        811.5 ms ±  7.9 ms
-snix-canon     2.789 s ± 0.062 s   (3.44× cppnix)
-snix-opt       2.190 s ± 0.047 s   (2.70× cppnix, −21.5% vs canon)
+cppnix        802.7 ms ±  6.9 ms
+snix-canon     2.736 s ± 0.046 s   (3.41× cppnix)
+snix-opt       2.144 s ± 0.031 s   (2.67× cppnix, −21.6% vs canon)
 ```
 
 **NixOS system eval:**
 
 ```
-cppnix         2.823 s ± 0.096 s
-snix-canon    20.383 s ± 0.095 s   (7.22× cppnix)
-snix-opt      14.491 s ± 0.382 s   (5.13× cppnix, −28.9% vs canon)
+cppnix         2.766 s ± 0.055 s
+snix-canon    20.491 s ± 0.336 s   (7.41× cppnix)
+snix-opt      12.662 s ± 0.163 s   (4.58× cppnix, −38.2% vs canon)
 ```
 
 The gap is ~2× larger on the module-system workload: heavy attrset traffic,
@@ -65,6 +65,9 @@ Commits in order:
 - [`9f4d5efd`](https://github.com/codedownio/snix/commit/9f4d5efdca3f7e30fa9f724f37884adf57cfa1eb)
   `check_equality` tries the sync comparison before yielding, skipping the
   request round-trip through the coroutine airlock (**−6.3% NixOS**).
+- [`66727243`](https://github.com/codedownio/snix/commit/6672724302037df64984930ee51f3052e03f5fc9)
+  `genericClosure`: hash-set key dedup (nix_eq-exact semantics) replacing the
+  O(n²) linear equality scan; keys forced eagerly as in CppNix (**−10.7% NixOS**).
 
 ## The realise benchmark
 
