@@ -1,7 +1,10 @@
 # snix-eval-bench
 
-A benchmark comparing eval of **[CppNix](https://github.com/NixOS/nix)** and
-**[snix](https://snix.dev)**. All you have to do to run it is this:
+A benchmark comparing eval of **[CppNix](https://github.com/NixOS/nix)**, canon
+**[snix](https://snix.dev)**, and the local snix evaluator-optimization branch
+(`vm-force-fastpath` — force fast paths, direct thunk entry, sync builtins,
+fixed-width operands). All evaluators are checked to produce byte-identical drv
+paths before timing. All you have to do to run it is this:
 
 ```bash
 nix run

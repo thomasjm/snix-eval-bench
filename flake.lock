@@ -37,7 +37,8 @@
         "crane": "crane",
         "nixpkgs": "nixpkgs",
         "rust-overlay": "rust-overlay",
-        "snix": "snix"
+        "snix": "snix",
+        "snix-optimized": "snix-optimized"
       }
     },
     "rust-overlay": {
@@ -75,6 +76,23 @@
         "ref": "main",
         "repo": "snix",
         "type": "github"
+      }
+    },
+    "snix-optimized": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1783732541,
+        "narHash": "sha256-2BvMuaO8fXrey/wxo19moB8TW9BIA3MbTsJd1ZoDkiM=",
+        "ref": "vm-force-fastpath",
+        "rev": "a62ff608cc2407b161072ea19e0937edb5b35dee",
+        "revCount": 22627,
+        "type": "git",
+        "url": "file:///home/tom/tools/snix"
+      },
+      "original": {
+        "ref": "vm-force-fastpath",
+        "type": "git",
+        "url": "file:///home/tom/tools/snix"
       }
     }
   },

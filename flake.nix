@@ -13,9 +13,16 @@
       url = "github:codedownio/snix/main";
       flake = false;
     };
+    # The local evaluator-optimization branch (force fast paths, direct thunk
+    # entry, sync builtins, fixed-width operands, ...). The compare benches run
+    # CppNix vs canon snix vs this.
+    snix-optimized = {
+      url = "git+file:///home/tom/tools/snix?ref=vm-force-fastpath";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, crane, rust-overlay, snix }:
+  outputs = { self, nixpkgs, crane, rust-overlay, snix, snix-optimized }:
     let
       systems = [ "x86_64-linux" "aarch64-linux" ];
       forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f system);
@@ -32,57 +39,70 @@
           # The cargo workspace lives in the snix/ subdir. snix-cli-eval's build scripts want
           # a PROTO_ROOT with snix/{castore,store,build} entries, and snix-build wants a
           # sandbox shell path at compile time (unused here — the benchmark never builds).
-          snixSrc = pkgs.runCommand "snix-src" { } ''
-            cp -r ${snix}/snix $out
-            chmod -R u+w $out
-            mkdir -p $out/proto-root/snix
-            ln -s $out/castore $out/proto-root/snix/castore
-            ln -s $out/store $out/proto-root/snix/store
-            ln -s $out/build $out/proto-root/snix/build
-          '';
+          mkSnixEval = name: snixInput:
+            let
+              snixSrc = pkgs.runCommand "${name}-src" { } ''
+                cp -r ${snixInput}/snix $out
+                chmod -R u+w $out
+                mkdir -p $out/proto-root/snix
+                ln -s $out/castore $out/proto-root/snix/castore
+                ln -s $out/store $out/proto-root/snix/store
+                ln -s $out/build $out/proto-root/snix/build
+              '';
 
-          snixCommonArgs = {
-            src = snixSrc;
-            version = "0.0.1";
-            nativeBuildInputs = [ pkgs.protobuf pkgs.pkg-config ];
-            buildInputs = [ pkgs.openssl ];
-            PROTO_ROOT = "${snixSrc}/proto-root";
-            SNIX_BUILD_SANDBOX_SHELL = "/homeless-shelter";
-            doCheck = false;
-          };
+              snixCommonArgs = {
+                src = snixSrc;
+                version = "0.0.1";
+                nativeBuildInputs = [ pkgs.protobuf pkgs.pkg-config ];
+                buildInputs = [ pkgs.openssl ];
+                PROTO_ROOT = "${snixSrc}/proto-root";
+                SNIX_BUILD_SANDBOX_SHELL = "/homeless-shelter";
+                doCheck = false;
+              };
+            in
+            craneLib.buildPackage (snixCommonArgs // {
+              pname = name;
+              cargoArtifacts = craneLib.buildDepsOnly (snixCommonArgs // { pname = "${name}-deps"; });
+              # xp-store-composition-cli: enables --experimental-store-composition, which the realise
+              # benchmark needs to point snix at a castore store (nox builds snix-eval with it too).
+              cargoExtraArgs = "--package snix-cli-eval --features xp-store-composition-cli";
+            });
 
-          snix-eval = craneLib.buildPackage (snixCommonArgs // {
-            pname = "snix-eval";
-            cargoArtifacts = craneLib.buildDepsOnly (snixCommonArgs // { pname = "snix-deps"; });
-            # xp-store-composition-cli: enables --experimental-store-composition, which the realise
-            # benchmark needs to point snix at a castore store (nox builds snix-eval with it too).
-            cargoExtraArgs = "--package snix-cli-eval --features xp-store-composition-cli";
-          });
+          snix-eval = mkSnixEval "snix-eval" snix;
+          snix-eval-opt = mkSnixEval "snix-eval-opt" snix-optimized;
 
           env = import ./env.nix { nixpkgs = nixpkgs.outPath; inherit system; };
 
-          # Common CppNix-vs-snix comparison harness: sanity-check that both
-          # evaluators produce the same drv path for `expr`, then hyperfine
-          # them. `defaultRuns` can be overridden at runtime via RUNS.
+          # Common comparison harness: sanity-check that all three evaluators
+          # (CppNix, canon snix, the optimized snix branch) produce the same
+          # drv path for `expr`, then hyperfine them. `defaultRuns` can be
+          # overridden at runtime via RUNS (and warmup via WARMUP).
           mkCompareBench = { name, expr, defaultRuns ? 5 }: pkgs.writeShellApplication {
             inherit name;
-            runtimeInputs = [ pkgs.hyperfine pkgs.nix snix-eval ];
+            runtimeInputs = [ pkgs.hyperfine pkgs.nix ];
             text = ''
               expr=${pkgs.lib.escapeShellArg expr}
+              snix_canon=${snix-eval}/bin/snix-eval
+              snix_opt=${snix-eval-opt}/bin/snix-eval
 
-              echo "CppNix:   $(nix eval --version)"
-              echo "snix:     rev ${snix.rev or "unknown"}"
-              echo "nixpkgs:  ${nixpkgs.outPath}"
+              echo "CppNix:     $(nix eval --version)"
+              echo "snix-canon: rev ${snix.rev or "unknown"}"
+              echo "snix-opt:   rev ${snix-optimized.rev or snix-optimized.dirtyRev or "unknown"}"
+              echo "nixpkgs:    ${nixpkgs.outPath}"
               echo
               echo "Expression: $expr"
               echo
 
-              # Sanity check: both evaluators must instantiate the same drv.
+              snix_drv() { RUST_LOG=error "$1" --no-warnings -E "$expr" 2>/dev/null | grep -E '^=> ' | tr -d '"' | awk '{print $2}'; }
+
+              # Sanity check: all evaluators must instantiate the same drv.
               cpp_drv=$(nix eval --raw --impure --expr "$expr" 2>/dev/null)
-              snix_drv=$(RUST_LOG=error snix-eval --no-warnings -E "$expr" 2>/dev/null | grep -E '^=> ' | tr -d '"' | awk '{print $2}')
-              echo "CppNix drvPath: $cpp_drv"
-              echo "snix drvPath: $snix_drv"
-              if [ "$cpp_drv" != "$snix_drv" ]; then
+              canon_drv=$(snix_drv "$snix_canon")
+              opt_drv=$(snix_drv "$snix_opt")
+              echo "CppNix drvPath:     $cpp_drv"
+              echo "snix-canon drvPath: $canon_drv"
+              echo "snix-opt drvPath:   $opt_drv"
+              if [ "$cpp_drv" != "$canon_drv" ] || [ "$cpp_drv" != "$opt_drv" ]; then
                 echo "MISMATCH: evaluators disagree on the drv path" >&2
                 exit 1
               fi
@@ -90,7 +110,8 @@
 
               hyperfine --warmup "''${WARMUP:-1}" --runs "''${RUNS:-${toString defaultRuns}}" \
                 --command-name cppnix "nix eval --raw --impure --expr '$expr'" \
-                --command-name snix "RUST_LOG=error snix-eval --no-warnings -E '$expr'" \
+                --command-name snix-canon "RUST_LOG=error $snix_canon --no-warnings -E '$expr'" \
+                --command-name snix-opt "RUST_LOG=error $snix_opt --no-warnings -E '$expr'" \
                 "$@"
             '';
           };
@@ -178,7 +199,7 @@
           };
         in
         {
-          inherit snix-eval env bench realise;
+          inherit snix-eval snix-eval-opt env bench realise;
           nixos = nixos-bench;
           default = bench;
         });
